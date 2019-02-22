@@ -25,7 +25,7 @@ def readlines(filename):
     return lines
 
 #filename = "data/Japanese.txt"
-filename = "data/url.txt"
+filename = "data/url_dataset.txt"
 url_lines = readlines(filename)
 dprint(url_lines)
 

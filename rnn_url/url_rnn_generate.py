@@ -173,8 +173,9 @@ for iter in range(1, n_iters+1):
         assert np.isnan(loss)==False, 'nan'
         for i in range(ord('a'), ord('z')):
             fprint(sample(chr(i)))
-        #for i in range(ord('A'), ord('Z')):
-            #fprint(sample(chr(i)))
+        for i in range(ord('0'), ord('9')):
+            fprint(sample(chr(i)))
     if iter % plot_every == 0:
         all_losses.append(total_loss / plot_every)
         total_loss = 0
+        torch.save(rnn.state_dict(), './weights/checkpoint')

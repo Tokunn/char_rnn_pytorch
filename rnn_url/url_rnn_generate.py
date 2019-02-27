@@ -1,7 +1,8 @@
 import glob
-import os,sys
+import os,sys,time,datetime
 import string
 import numpy as np
+from tqdm import tqdm
 
 all_letters = string.ascii_letters + " .,;'-:/"
 all_letters = string.printable
@@ -15,7 +16,7 @@ def dprint(*line):
         print(line)
 
 def fprint(line):
-    print(line)
+    print(line, flush=True)
     with open("output.log",'a') as f:
         f.seek(2,0)
         print(line, file=f)
@@ -28,6 +29,8 @@ def readlines(filename):
 filename = "data/url_dataset.txt"
 url_lines = readlines(filename)
 dprint(url_lines)
+n_url = len(url_lines)
+print(n_url)
 
 import torch
 import torch.nn as nn
@@ -76,14 +79,14 @@ def randomChoice(l):
     #return l[random.randint(0, len(l) - 1)]
     global counter
     choice = l[counter]
-    counter += 1
     counter %= len(l)
+    #counter += 1
     dprint("choice", choice)
     return choice
 
-def randomTrainingPair():
-    line = randomChoice(url_lines)
-    return line
+#def randomTrainingPair():
+#    line = randomChoice(url_lines)
+#    return line
 
 def inputTensor(line):
     tensor = torch.zeros(len(line), 1, n_letters)
@@ -101,7 +104,8 @@ def targetTensor(line):
 
 
 def randomTrainingExample():
-    line = randomTrainingPair()
+    #line = randomTrainingPair()
+    line = randomChoice(url_lines)
     input_line_tensor = inputTensor(line)
     target_line_tensor = targetTensor(line)
     return input_line_tensor, target_line_tensor
@@ -160,22 +164,38 @@ def sample(start_letter='A'):
 
 rnn = RNN(n_letters, 128, n_letters)
 
-n_iters = 100000
-print_every = 1000
-plot_every = 500
+n_epoch = 100
+n_iters = len(url_lines)
+print_every = len(url_lines)*100
+plot_every = len(url_lines)*100
 all_losses = []
 total_loss = 0
 
-for iter in range(1, n_iters+1):
-    output, loss = train(*randomTrainingExample())
-    if iter % print_every == 0:
-        fprint('(%d %d%%) %.4f' % (iter, iter / n_iters * 100, loss))
-        assert np.isnan(loss)==False, 'nan'
-        for i in range(ord('a'), ord('z')):
-            fprint(sample(chr(i)))
-        for i in range(ord('0'), ord('9')):
-            fprint(sample(chr(i)))
-    if iter % plot_every == 0:
-        all_losses.append(total_loss / plot_every)
-        total_loss = 0
-        torch.save(rnn.state_dict(), './weights/checkpoint')
+for epoch in range(n_epoch):
+    print("epoch {:3d}/{:3d}".format(epoch, n_epoch), flush=True)
+    for i in range(n_url):
+        output, loss = train(*randomTrainingExample())
+        if (i % 5000 == 0):
+            fprint('\n'+'#'*10 + ' epoch:%d  (%d/%d %d%%) %.4f' % (epoch, i, n_url, i/n_url*100, loss))
+            assert np.isnan(loss)==False, 'nan'
+            now = datetime.datetime.now()
+            datename = "{0:%Y%m%d%H%M%S}".format(now)
+            torch.save(rnn.state_dict(), './weights/checkpoint'+datename)
+            for i in range(ord('a'), ord('z')):
+                fprint(sample(chr(i)))
+
+#for iter in range(1, n_iters+1):
+#    output, loss = train(*randomTrainingExample())
+#    if iter % print_every == 0:
+#        fprint('(%d %d%%) %.4f' % (iter, iter / n_iters * 100, loss))
+#        assert np.isnan(loss)==False, 'nan'
+#        for i in range(ord('a'), ord('z')):
+#            fprint(sample(chr(i)))
+#        for i in range(ord('0'), ord('9')):
+#            fprint(sample(chr(i)))
+#    if iter % plot_every == 0:
+#        all_losses.append(total_loss / plot_every)
+#        total_loss = 0
+#        now = datetime.datetime.now()
+#        datename = "{0:%Y%m%d%H%M%S}".format(now)
+#        torch.save(rnn.state_dict(), './weights/checkpoint'+datename)
